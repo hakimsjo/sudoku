@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link id="theme-style" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+        }
+        .sudoku-board {
+            display: grid;
+            grid-template-columns: repeat(9, 40px);
+            grid-template-rows: repeat(9, 40px);
+            gap: 2px;
+            margin: 20px auto;
+            width: fit-content;
+            border: 4px solid #333;
+            background: #222;
+        }
+        .sudoku-cell {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            font-size: 1.5rem;
+            border: 1px solid #888;
+            background: #fff;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        /* Kraftigare ramar för 3x3-block */
+        .sudoku-cell.thick-top { border-top: 6px solid #111 !important; }
+        .sudoku-cell.thick-left { border-left: 6px solid #111 !important; }
+        .sudoku-cell.thick-right { border-right: 6px solid #111 !important; }
+        .sudoku-cell.thick-bottom { border-bottom: 6px solid #111 !important; }
+        .sudoku-cell.prefilled {
+            background: #e9ecef;
+            font-weight: bold;
+            cursor: default;
+        }
+        .sudoku-cell.selected {
+            background: #ffe082;
+        }
+        .sudoku-cell.highlight {
+            background: #f1f8e9;
+        }
+        .sudoku-controls {
+            margin: 20px auto;
+            width: fit-content;
+        }
+        .btn-darkmode {
+            margin-left: 10px;
+        }
+        .highscore-list {
+            max-width: 300px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Sudoku</h2>
+            <div>
+                <select id="difficulty" class="form-select d-inline-block w-auto">
+                    <option value="easy">🟢 Lätt</option>
+                    <option value="medium">🟡 Medel</option>
+                    <option value="hard">🔴 Svår</option>
+                </select>
+                <button id="highscoreBtn" class="btn btn-info">🏆 Highscore</button>
+            </div>
+        </div>
+        <div id="timer" class="mb-2">Tid: 0:00</div>
+        <div id="sudoku-board" class="sudoku-board"></div>
+        <div class="sudoku-controls mt-3">
+            <div class="d-flex flex-column align-items-center">
+                <div class="btn-group mb-2" role="group">
+                    <button class="btn btn-outline-secondary num-btn" data-num="1">1️⃣</button>
+                    <button class="btn btn-outline-secondary num-btn" data-num="2">2️⃣</button>
+                    <button class="btn btn-outline-secondary num-btn" data-num="3">3️⃣</button>
+                    <button class="btn btn-outline-secondary num-btn" data-num="4">4️⃣</button>
+                    <button class="btn btn-outline-secondary num-btn" data-num="5">5️⃣</button>
+                    <button class="btn btn-outline-secondary num-btn" data-num="6">6️⃣</button>
+                    <button class="btn btn-outline-secondary num-btn" data-num="7">7️⃣</button>
+                    <button class="btn btn-outline-secondary num-btn" data-num="8">8️⃣</button>
+                    <button class="btn btn-outline-secondary num-btn" data-num="9">9️⃣</button>
+                </div>
+                <div class="d-flex justify-content-center mb-2">
+                    <button class="btn btn-outline-danger ms-2" id="clearBtn">🧹 Rensa</button>
+                    <button class="btn btn-outline-success ms-2" id="checkBtn">✅ Kolla</button>
+                    <button class="btn btn-outline-primary ms-2" id="newGameBtn">🆕 Nytt spel</button>
+                </div>
+                <button id="toggleTheme" class="btn btn-dark btn-darkmode mt-2">🌓 Mörkt/Ljust läge</button>
+            </div>
+        </div>
+        <div id="highscoreModal" class="modal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Highscore</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ul id="highscoreList" class="list-group highscore-list"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    // Lägg till klasser för kraftigare 3x3-ramar när brädet renderas
+    let checkResult = null; // null eller 2D-array med 'right', 'wrong', eller null
+    const origRenderBoard = window.renderBoard;
+    window.renderBoard = function() {
+        const boardDiv = document.getElementById('sudoku-board');
+        boardDiv.innerHTML = '';
+        for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'sudoku-cell';
+                cell.dataset.row = r;
+                cell.dataset.col = c;
+                // Lägg till tjocka ramar för 3x3
+                if (r % 3 === 0) cell.classList.add('thick-top');
+                if (c % 3 === 0) cell.classList.add('thick-left');
+                if (r === 8) cell.classList.add('thick-bottom');
+                if (c === 8) cell.classList.add('thick-right');
+                if (window.boards && window.boards[window.difficulty][r][c] !== 0) {
+                    cell.textContent = window.boards[window.difficulty][r][c];
+                    cell.classList.add('prefilled');
+                } else if (window.currentBoard && window.currentBoard[r][c] !== 0) {
+                    cell.textContent = window.currentBoard[r][c];
+                } else {
+                    cell.textContent = '';
+                }
+                cell.onclick = () => window.selectCell(r, c);
+                if (window.selectedCell && window.selectedCell[0] === r && window.selectedCell[1] === c) {
+                    cell.classList.add('selected');
+                }
+                // Färgmarkera rätt/fel om checkResult finns
+                if (checkResult && checkResult[r][c] === 'right') {
+                    cell.style.background = '#c8e6c9'; // grön
+                } else if (checkResult && checkResult[r][c] === 'wrong') {
+                    cell.style.background = '#ffcdd2'; // röd
+                }
+                boardDiv.appendChild(cell);
+            }
+        }
+    };
+    // Hantera Kolla-knappen
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkBtn = document.getElementById('checkBtn');
+        if (checkBtn) {
+            checkBtn.onclick = function() {
+                if (!window.currentBoard || !window.solution) return;
+                checkResult = Array.from({length:9},()=>Array(9).fill(null));
+                for (let r = 0; r < 9; r++) {
+                    for (let c = 0; c < 9; c++) {
+                        if (window.boards && window.boards[window.difficulty][r][c] !== 0) continue;
+                        if (window.currentBoard[r][c] === 0) continue;
+                        if (window.currentBoard[r][c] === window.solution[r][c]) {
+                            checkResult[r][c] = 'right';
+                        } else {
+                            checkResult[r][c] = 'wrong';
+                        }
+                    }
+                }
+                window.renderBoard();
+            };
+        }
+    });
+    </script>
+    <script src="sudoku.js"></script>
+</body>
+</html>
