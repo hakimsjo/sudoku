@@ -36,6 +36,22 @@
         .sudoku-cell.thick-left { border-left: 6px solid #111 !important; }
         .sudoku-cell.thick-right { border-right: 6px solid #111 !important; }
         .sudoku-cell.thick-bottom { border-bottom: 6px solid #111 !important; }
+
+        /* Extra tydliga 3x3-ramar */
+        .sudoku-cell.thick-top,
+        .sudoku-cell.thick-left,
+        .sudoku-cell.thick-right,
+        .sudoku-cell.thick-bottom {
+            box-shadow: 0 0 0 1px #111;
+        }
+
+        body.bg-dark .sudoku-cell.thick-top,
+        body.bg-dark .sudoku-cell.thick-left,
+        body.bg-dark .sudoku-cell.thick-right,
+        body.bg-dark .sudoku-cell.thick-bottom {
+            border-color: #ffe082 !important;
+            box-shadow: 0 0 0 1px #ffe082;
+        }
         .sudoku-cell.prefilled {
             background: #e9ecef;
             font-weight: bold;
@@ -57,6 +73,38 @@
         .highscore-list {
             max-width: 300px;
             margin: 0 auto;
+        }
+        /* Förbättrad synlighet i mörkt läge */
+        body.bg-dark .sudoku-cell {
+            background: #222 !important;
+            color: #fff !important;
+            border-color: #666;
+        }
+        body.bg-dark .sudoku-cell.prefilled {
+            background: #444 !important;
+            color: #fff !important;
+        }
+        body.bg-dark .sudoku-cell.selected {
+            background: #555 !important;
+            color: #ffe082 !important;
+        }
+        body.bg-dark .sudoku-cell.highlight {
+            background: #333 !important;
+            color: #fff !important;
+        }
+        body.bg-dark .sudoku-cell.thick-top,
+        body.bg-dark .sudoku-cell.thick-left,
+        body.bg-dark .sudoku-cell.thick-right,
+        body.bg-dark .sudoku-cell.thick-bottom {
+            border-color: #aaa !important;
+        }
+        body.bg-dark .sudoku-cell[style*="background: #c8e6c9"] {
+            background: #357a38 !important;
+            color: #fff !important;
+        }
+        body.bg-dark .sudoku-cell[style*="background: #ffcdd2"] {
+            background: #b71c1c !important;
+            color: #fff !important;
         }
     </style>
 </head>
@@ -90,7 +138,7 @@
                 </div>
                 <div class="d-flex justify-content-center mb-2">
                     <button class="btn btn-outline-danger ms-2" id="clearBtn">🧹 Rensa</button>
-                    <button class="btn btn-outline-success ms-2" id="checkBtn">✅ Kolla</button>
+                    <button class="btn btn-outline-success ms-2" id="checkBtn">✅ Rätta</button>
                     <button class="btn btn-outline-primary ms-2" id="newGameBtn">🆕 Nytt spel</button>
                 </div>
                 <button id="toggleTheme" class="btn btn-dark btn-darkmode mt-2">🌓 Mörkt/Ljust läge</button>

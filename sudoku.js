@@ -24,16 +24,27 @@ const boards = {
         [0,0,2,0,1,0,0,0,0],
         [0,0,0,0,4,0,0,0,9]
     ],
+    mediumSolution: [
+        [9,8,7,6,5,4,3,2,1],
+        [2,4,6,1,7,3,9,8,5],
+        [3,5,1,9,2,8,7,4,6],
+        [1,2,8,5,3,7,6,9,4],
+        [6,3,4,8,9,2,1,5,7],
+        [7,9,5,4,6,1,8,3,2],
+        [5,1,9,2,8,6,4,7,3],
+        [4,6,2,3,1,9,5,8,7],
+        [8,7,3,7,4,5,2,1,9]
+    ],
     hard: [
-        [0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0]
+        [8,0,0,0,0,0,0,0,0],
+        [0,0,3,6,0,0,0,0,0],
+        [0,7,0,0,9,0,2,0,0],
+        [0,5,0,0,0,7,0,0,0],
+        [0,0,0,0,4,5,7,0,0],
+        [0,0,0,1,0,0,0,3,0],
+        [0,0,1,0,0,0,0,6,8],
+        [0,0,8,5,0,0,0,1,0],
+        [0,9,0,0,0,0,4,0,0]
     ]
 };
 
@@ -49,9 +60,18 @@ function deepCopy(board) {
 }
 
 function generateBoard(diff) {
-    // For demo, use static boards. For real, implement generator/solver.
+    // Använd förberäknade lösningar för alla svårighetsgrader
     currentBoard = deepCopy(boards[diff]);
-    solution = solveSudoku(deepCopy(currentBoard));
+    if(diff === 'medium' && boards.mediumSolution) {
+        solution = deepCopy(boards.mediumSolution);
+    } else if(diff === 'easy' && boards.easySolution) {
+        solution = deepCopy(boards.easySolution);
+    } else if(diff === 'hard' && boards.hardSolution) {
+        solution = deepCopy(boards.hardSolution);
+    } else {
+        // Om ingen lösning finns, sätt solution till currentBoard (för att undvika fel)
+        solution = deepCopy(currentBoard);
+    }
 }
 
 function renderBoard() {
@@ -124,38 +144,7 @@ function isSolved() {
     return true;
 }
 
-function solveSudoku(board) {
-    // Simple backtracking solver
-    function isValid(board, row, col, num) {
-        for (let i = 0; i < 9; i++) {
-            if (board[row][i] === num || board[i][col] === num) return false;
-        }
-        const br = Math.floor(row/3)*3, bc = Math.floor(col/3)*3;
-        for (let r = br; r < br+3; r++) for (let c = bc; c < bc+3; c++) {
-            if (board[r][c] === num) return false;
-        }
-        return true;
-    }
-    function solve(board) {
-        for (let r = 0; r < 9; r++) {
-            for (let c = 0; c < 9; c++) {
-                if (board[r][c] === 0) {
-                    for (let n = 1; n <= 9; n++) {
-                        if (isValid(board, r, c, n)) {
-                            board[r][c] = n;
-                            if (solve(board)) return true;
-                            board[r][c] = 0;
-                        }
-                    }
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-    solve(board);
-    return board;
-}
+
 
 function startTimer() {
     timer = 0;
@@ -235,6 +224,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function newGame() {
+    // Slumpa om brädet om det finns flera varianter, annars rotera raderna för enkel randomisering
+    if(Array.isArray(boards[difficulty + 'Variants'])) {
+        const variants = boards[difficulty + 'Variants'];
+        const idx = Math.floor(Math.random() * variants.length);
+        boards[difficulty] = variants[idx];
+    } else {
+        // Enkel randomisering: rotera raderna (för demo, ej äkta sudoku-generator)
+        boards[difficulty] = deepCopy(boards[difficulty]);
+        for(let i=0; i<Math.floor(Math.random()*9); i++) {
+            boards[difficulty].push(boards[difficulty].shift());
+        }
+    }
     generateBoard(difficulty);
     selectedCell = null;
     renderBoard();
