@@ -2,6 +2,8 @@
 
 Ett litet sudoku-spel för webbläsare med tre svårighetsgrader, highscore och mörkt/ljust läge.
 
+![alt text](image.png)
+
 ## Funktioner
 - Tre svårighetsgrader: Lätt, Medel, Svår
 - Highscore-lista
