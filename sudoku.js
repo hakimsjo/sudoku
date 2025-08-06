@@ -59,19 +59,94 @@ function deepCopy(board) {
     return board.map(row => row.slice());
 }
 
-function generateBoard(diff) {
-    // Använd förberäknade lösningar för alla svårighetsgrader
-    currentBoard = deepCopy(boards[diff]);
-    if(diff === 'medium' && boards.mediumSolution) {
-        solution = deepCopy(boards.mediumSolution);
-    } else if(diff === 'easy' && boards.easySolution) {
-        solution = deepCopy(boards.easySolution);
-    } else if(diff === 'hard' && boards.hardSolution) {
-        solution = deepCopy(boards.hardSolution);
-    } else {
-        // Om ingen lösning finns, sätt solution till currentBoard (för att undvika fel)
-        solution = deepCopy(currentBoard);
+
+// Enkel sudoku-generator
+function generateSudoku(difficulty) {
+    // Skapa ett komplett bräde
+    function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
     }
+    function fillBoard(board) {
+        for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+                if (board[r][c] === 0) {
+                    let nums = shuffle([1,2,3,4,5,6,7,8,9]);
+                    for (let n of nums) {
+                        if (isSafe(board, r, c, n)) {
+                            board[r][c] = n;
+                            if (fillBoard(board)) return true;
+                            board[r][c] = 0;
+                        }
+                    }
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    function isSafe(board, row, col, num) {
+        for (let i = 0; i < 9; i++) {
+            if (board[row][i] === num || board[i][col] === num) return false;
+        }
+        const br = Math.floor(row/3)*3, bc = Math.floor(col/3)*3;
+        for (let r = br; r < br+3; r++) for (let c = bc; c < bc+3; c++) {
+            if (board[r][c] === num) return false;
+        }
+        return true;
+    }
+    // Skapa tomt bräde och fyll det
+    let solution = Array.from({length:9},()=>Array(9).fill(0));
+    fillBoard(solution);
+    // Skapa spelbräde genom att ta bort siffror
+    let puzzle = deepCopy(solution);
+    let attempts = difficulty === 'easy' ? 30 : difficulty === 'medium' ? 45 : 55;
+    while (attempts > 0) {
+        let row = Math.floor(Math.random()*9);
+        let col = Math.floor(Math.random()*9);
+        while (puzzle[row][col] === 0) {
+            row = Math.floor(Math.random()*9);
+            col = Math.floor(Math.random()*9);
+        }
+        let backup = puzzle[row][col];
+        puzzle[row][col] = 0;
+        // Kontrollera att det fortfarande finns en lösning (enkel kontroll)
+        let puzzleCopy = deepCopy(puzzle);
+        let count = 0;
+        function countSolutions(board) {
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    if (board[r][c] === 0) {
+                        for (let n = 1; n <= 9; n++) {
+                            if (isSafe(board, r, c, n)) {
+                                board[r][c] = n;
+                                countSolutions(board);
+                                board[r][c] = 0;
+                            }
+                        }
+                        return;
+                    }
+                }
+            }
+            count++;
+        }
+        countSolutions(puzzleCopy);
+        if (count !== 1) {
+            puzzle[row][col] = backup;
+            attempts--;
+        }
+    }
+    return { puzzle, solution };
+}
+
+function generateBoard(diff) {
+    // Anropa generatorn för nytt bräde
+    const { puzzle, solution: sol } = generateSudoku(diff);
+    currentBoard = deepCopy(puzzle);
+    solution = deepCopy(sol);
 }
 
 function renderBoard() {
@@ -83,13 +158,21 @@ function renderBoard() {
             cell.className = 'sudoku-cell';
             cell.dataset.row = r;
             cell.dataset.col = c;
-            if (boards[difficulty][r][c] !== 0) {
-                cell.textContent = boards[difficulty][r][c];
+            // Förifylld ruta: om currentBoard har samma värde som solution och currentBoard[r][c] != 0
+            if (currentBoard[r][c] !== 0 && currentBoard[r][c] === solution[r][c]) {
+                cell.textContent = currentBoard[r][c];
                 cell.classList.add('prefilled');
+                cell.style.background = '#e9ecef';
             } else if (currentBoard[r][c] !== 0) {
                 cell.textContent = currentBoard[r][c];
+                if (window.checkErrors && currentBoard[r][c] !== solution[r][c]) {
+                    cell.classList.add('cell-error');
+                }
             } else {
                 cell.textContent = '';
+                if (window.checkErrors) {
+                    cell.classList.add('cell-error');
+                }
             }
             cell.onclick = () => selectCell(r, c);
             if (selectedCell && selectedCell[0] === r && selectedCell[1] === c) {
@@ -98,6 +181,12 @@ function renderBoard() {
             boardDiv.appendChild(cell);
         }
     }
+}
+// Lägg till CSS för cell-error
+if (typeof window !== 'undefined') {
+    const style = document.createElement('style');
+    style.innerHTML = `.cell-error { background: #ffcdd2 !important; }`;
+    document.head.appendChild(style);
 }
 
 function selectCell(r, c) {
@@ -209,12 +298,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('clearBtn').onclick = clearCell;
     document.getElementById('checkBtn').onclick = () => {
+        window.checkErrors = true;
+        renderBoard();
         if (isSolved()) {
             stopTimer();
             saveHighscore();
             alert('Grattis! Du löste sudokut!');
+            window.checkErrors = false;
+            newGame();
         } else {
             alert('Fel lösning!');
+            if (!isBoardFull()) {
+                setTimeout(() => {
+                    window.checkErrors = false;
+                    renderBoard();
+                }, 5000);
+            }
         }
     };
     document.getElementById('newGameBtn').onclick = newGame;
@@ -224,18 +323,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function newGame() {
-    // Slumpa om brädet om det finns flera varianter, annars rotera raderna för enkel randomisering
-    if(Array.isArray(boards[difficulty + 'Variants'])) {
-        const variants = boards[difficulty + 'Variants'];
-        const idx = Math.floor(Math.random() * variants.length);
-        boards[difficulty] = variants[idx];
-    } else {
-        // Enkel randomisering: rotera raderna (för demo, ej äkta sudoku-generator)
-        boards[difficulty] = deepCopy(boards[difficulty]);
-        for(let i=0; i<Math.floor(Math.random()*9); i++) {
-            boards[difficulty].push(boards[difficulty].shift());
-        }
-    }
     generateBoard(difficulty);
     selectedCell = null;
     renderBoard();
