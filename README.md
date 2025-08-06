@@ -11,7 +11,7 @@ Ett litet sudoku-spel för webbläsare med tre svårighetsgrader, highscore och 
 
 ## Demo
 Testa spelet direkt här:
-https://htmlpreview.github.io/?https://github.com/hakimsjo/sudoku/blob/main/index.html
+🈸[Sudoku](https://htmlpreview.github.io/?https://github.com/hakimsjo/sudoku/blob/main/index.html)
 
 ## Installation
 1. Klona detta repo:
