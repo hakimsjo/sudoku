@@ -162,67 +162,7 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    // Lägg till klasser för kraftigare 3x3-ramar när brädet renderas
-    let checkResult = null; // null eller 2D-array med 'right', 'wrong', eller null
-    const origRenderBoard = window.renderBoard;
-    window.renderBoard = function() {
-        const boardDiv = document.getElementById('sudoku-board');
-        boardDiv.innerHTML = '';
-        for (let r = 0; r < 9; r++) {
-            for (let c = 0; c < 9; c++) {
-                const cell = document.createElement('div');
-                cell.className = 'sudoku-cell';
-                cell.dataset.row = r;
-                cell.dataset.col = c;
-                // Lägg till tjocka ramar för 3x3
-                if (r % 3 === 0) cell.classList.add('thick-top');
-                if (c % 3 === 0) cell.classList.add('thick-left');
-                if (r === 8) cell.classList.add('thick-bottom');
-                if (c === 8) cell.classList.add('thick-right');
-                if (window.boards && window.boards[window.difficulty][r][c] !== 0) {
-                    cell.textContent = window.boards[window.difficulty][r][c];
-                    cell.classList.add('prefilled');
-                } else if (window.currentBoard && window.currentBoard[r][c] !== 0) {
-                    cell.textContent = window.currentBoard[r][c];
-                } else {
-                    cell.textContent = '';
-                }
-                cell.onclick = () => window.selectCell(r, c);
-                if (window.selectedCell && window.selectedCell[0] === r && window.selectedCell[1] === c) {
-                    cell.classList.add('selected');
-                }
-                // Färgmarkera rätt/fel om checkResult finns
-                if (checkResult && checkResult[r][c] === 'right') {
-                    cell.style.background = '#c8e6c9'; // grön
-                } else if (checkResult && checkResult[r][c] === 'wrong') {
-                    cell.style.background = '#ffcdd2'; // röd
-                }
-                boardDiv.appendChild(cell);
-            }
-        }
-    };
-    // Hantera Kolla-knappen
-    document.addEventListener('DOMContentLoaded', function() {
-        const checkBtn = document.getElementById('checkBtn');
-        if (checkBtn) {
-            checkBtn.onclick = function() {
-                if (!window.currentBoard || !window.solution) return;
-                checkResult = Array.from({length:9},()=>Array(9).fill(null));
-                for (let r = 0; r < 9; r++) {
-                    for (let c = 0; c < 9; c++) {
-                        if (window.boards && window.boards[window.difficulty][r][c] !== 0) continue;
-                        if (window.currentBoard[r][c] === 0) continue;
-                        if (window.currentBoard[r][c] === window.solution[r][c]) {
-                            checkResult[r][c] = 'right';
-                        } else {
-                            checkResult[r][c] = 'wrong';
-                        }
-                    }
-                }
-                window.renderBoard();
-            };
-        }
-    });
+    
     </script>
     <script src="sudoku.js"></script>
 </body>

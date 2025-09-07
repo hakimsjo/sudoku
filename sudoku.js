@@ -48,12 +48,14 @@ const boards = {
     ]
 };
 
+let initialBoard = [];
 let currentBoard = [];
 let solution = [];
 let selectedCell = null;
 let timer = 0;
 let timerInterval = null;
 let difficulty = 'easy';
+let checkResult = null; // To store check results ('right', 'wrong')
 
 function deepCopy(board) {
     return board.map(row => row.slice());
@@ -142,9 +144,11 @@ function generateSudoku(difficulty) {
     return { puzzle, solution };
 }
 
+
 function generateBoard(diff) {
     // Anropa generatorn för nytt bräde
     const { puzzle, solution: sol } = generateSudoku(diff);
+    initialBoard = deepCopy(puzzle);
     currentBoard = deepCopy(puzzle);
     solution = deepCopy(sol);
 }
@@ -158,39 +162,56 @@ function renderBoard() {
             cell.className = 'sudoku-cell';
             cell.dataset.row = r;
             cell.dataset.col = c;
-            // Förifylld ruta: om currentBoard har samma värde som solution och currentBoard[r][c] != 0
-            if (currentBoard[r][c] !== 0 && currentBoard[r][c] === solution[r][c]) {
-                cell.textContent = currentBoard[r][c];
+            
+            // Add thick borders
+            if (r % 3 === 0) cell.classList.add('thick-top');
+            if (c % 3 === 0) cell.classList.add('thick-left');
+            if (r === 8) cell.classList.add('thick-bottom');
+            if (c === 8) cell.classList.add('thick-right');
+
+            if (initialBoard[r][c] !== 0) {
+                cell.textContent = initialBoard[r][c];
                 cell.classList.add('prefilled');
-                cell.style.background = '#e9ecef';
-            } else if (currentBoard[r][c] !== 0) {
-                cell.textContent = currentBoard[r][c];
-                if (window.checkErrors && currentBoard[r][c] !== solution[r][c]) {
-                    cell.classList.add('cell-error');
-                }
             } else {
-                cell.textContent = '';
-                if (window.checkErrors) {
-                    cell.classList.add('cell-error');
+                if (currentBoard[r][c] !== 0) {
+                    cell.textContent = currentBoard[r][c];
+                } else {
+                    cell.textContent = '';
+                }
+                
+                // Apply check result classes
+                if (checkResult) {
+                    if (checkResult[r][c] === 'right') {
+                        cell.classList.add('cell-correct');
+                    } else if (checkResult[r][c] === 'wrong') {
+                        cell.classList.add('cell-incorrect');
+                    }
                 }
             }
+
             cell.onclick = () => selectCell(r, c);
+
             if (selectedCell && selectedCell[0] === r && selectedCell[1] === c) {
                 cell.classList.add('selected');
             }
+            
             boardDiv.appendChild(cell);
         }
     }
 }
-// Lägg till CSS för cell-error
+
+// Add CSS for cell highlighting
 if (typeof window !== 'undefined') {
     const style = document.createElement('style');
-    style.innerHTML = `.cell-error { background: #ffcdd2 !important; }`;
+    style.innerHTML = `
+        .cell-correct { background: #c8e6c9 !important; }
+        .cell-incorrect { background: #ffcdd2 !important; }
+    `;
     document.head.appendChild(style);
 }
 
 function selectCell(r, c) {
-    if (boards[difficulty][r][c] !== 0) return;
+    if (initialBoard[r][c] !== 0) return;
     selectedCell = [r, c];
     renderBoard();
 }
@@ -198,7 +219,7 @@ function selectCell(r, c) {
 function fillCell(num) {
     if (!selectedCell) return;
     const [r, c] = selectedCell;
-    if (boards[difficulty][r][c] !== 0) return;
+    if (initialBoard[r][c] !== 0) return;
     currentBoard[r][c] = num;
     renderBoard();
     if (isBoardFull()) {
@@ -215,7 +236,7 @@ function fillCell(num) {
 function clearCell() {
     if (!selectedCell) return;
     const [r, c] = selectedCell;
-    if (boards[difficulty][r][c] !== 0) return;
+    if (initialBoard[r][c] !== 0) return;
     currentBoard[r][c] = 0;
     renderBoard();
 }
@@ -288,6 +309,7 @@ function toggleTheme() {
     body.classList.toggle('text-light');
 }
 
+
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('difficulty').onchange = e => {
         difficulty = e.target.value;
@@ -297,25 +319,47 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.onclick = () => fillCell(Number(btn.dataset.num));
     });
     document.getElementById('clearBtn').onclick = clearCell;
+    
     document.getElementById('checkBtn').onclick = () => {
-        window.checkErrors = true;
-        renderBoard();
-        if (isSolved()) {
-            stopTimer();
-            saveHighscore();
-            alert('Grattis! Du löste sudokut!');
-            window.checkErrors = false;
-            newGame();
-        } else {
-            alert('Fel lösning!');
-            if (!isBoardFull()) {
-                setTimeout(() => {
-                    window.checkErrors = false;
-                    renderBoard();
-                }, 5000);
+        if (!currentBoard || !solution) return;
+
+        checkResult = Array.from({ length: 9 }, () => Array(9).fill(null));
+        let allCorrect = true;
+        let boardFull = true;
+
+        for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+                if (initialBoard[r][c] !== 0) continue; // Skip pre-filled cells
+
+                if (currentBoard[r][c] !== 0) {
+                    if (currentBoard[r][c] === solution[r][c]) {
+                        checkResult[r][c] = 'right';
+                    } else {
+                        checkResult[r][c] = 'wrong';
+                        allCorrect = false;
+                    }
+                } else {
+                    boardFull = false;
+                    allCorrect = false;
+                }
             }
         }
+
+        renderBoard(); // Re-render with highlights
+
+        if (boardFull && allCorrect) {
+            stopTimer();
+            saveHighscore();
+            setTimeout(() => alert('Grattis! Du löste sudokut!'), 100);
+        } else {
+            // Clear highlights after 5 seconds
+            setTimeout(() => {
+                checkResult = null;
+                renderBoard();
+            }, 5000);
+        }
     };
+
     document.getElementById('newGameBtn').onclick = newGame;
     document.getElementById('highscoreBtn').onclick = showHighscore;
     document.getElementById('toggleTheme').onclick = toggleTheme;
@@ -325,6 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function newGame() {
     generateBoard(difficulty);
     selectedCell = null;
+    checkResult = null;
     renderBoard();
     startTimer();
 }
