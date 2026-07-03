@@ -182,86 +182,214 @@ function restoreSavedGame() {
 }
 
 
-// Enkel sudoku-generator
-function generateSudoku(difficulty) {
-    // Skapa ett komplett bräde
-    function shuffle(arr) {
-        for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        return arr;
+// Hjälpfunktioner för Sudoku-generering och lösning
+function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    function fillBoard(board) {
-        for (let r = 0; r < 9; r++) {
-            for (let c = 0; c < 9; c++) {
-                if (board[r][c] === 0) {
-                    let nums = shuffle([1,2,3,4,5,6,7,8,9]);
-                    for (let n of nums) {
-                        if (isSafe(board, r, c, n)) {
-                            board[r][c] = n;
-                            if (fillBoard(board)) return true;
-                            board[r][c] = 0;
-                        }
-                    }
-                    return false;
-                }
-            }
-        }
-        return true;
+    return arr;
+}
+
+function isSafe(board, row, col, num) {
+    for (let i = 0; i < 9; i++) {
+        if (board[row][i] === num || board[i][col] === num) return false;
     }
-    function isSafe(board, row, col, num) {
-        for (let i = 0; i < 9; i++) {
-            if (board[row][i] === num || board[i][col] === num) return false;
-        }
-        const br = Math.floor(row/3)*3, bc = Math.floor(col/3)*3;
-        for (let r = br; r < br+3; r++) for (let c = bc; c < bc+3; c++) {
+    const br = Math.floor(row / 3) * 3, bc = Math.floor(col / 3) * 3;
+    for (let r = br; r < br + 3; r++) {
+        for (let c = bc; c < bc + 3; c++) {
             if (board[r][c] === num) return false;
         }
-        return true;
     }
-    // Skapa tomt bräde och fyll det
-    let solution = Array.from({length:9},()=>Array(9).fill(0));
-    fillBoard(solution);
-    // Skapa spelbräde genom att ta bort siffror
-    let puzzle = deepCopy(solution);
-    let attempts = difficulty === 'easy' ? 30 : difficulty === 'medium' ? 45 : 55;
-    while (attempts > 0) {
-        let row = Math.floor(Math.random()*9);
-        let col = Math.floor(Math.random()*9);
-        while (puzzle[row][col] === 0) {
-            row = Math.floor(Math.random()*9);
-            col = Math.floor(Math.random()*9);
+    return true;
+}
+
+function fillBoard(board) {
+    for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+            if (board[r][c] === 0) {
+                let nums = shuffle([1,2,3,4,5,6,7,8,9]);
+                for (let n of nums) {
+                    if (isSafe(board, r, c, n)) {
+                        board[r][c] = n;
+                        if (fillBoard(board)) return true;
+                        board[r][c] = 0;
+                    }
+                }
+                return false;
+            }
         }
-        let backup = puzzle[row][col];
-        puzzle[row][col] = 0;
-        // Kontrollera att det fortfarande finns en lösning (enkel kontroll)
-        let puzzleCopy = deepCopy(puzzle);
-        let count = 0;
-        function countSolutions(board) {
-            for (let r = 0; r < 9; r++) {
-                for (let c = 0; c < 9; c++) {
-                    if (board[r][c] === 0) {
-                        for (let n = 1; n <= 9; n++) {
-                            if (isSafe(board, r, c, n)) {
-                                board[r][c] = n;
-                                countSolutions(board);
-                                board[r][c] = 0;
-                            }
+    }
+    return true;
+}
+
+function isValidSolution(board) {
+    if (!board || board.length !== 9) return false;
+    for (let r = 0; r < 9; r++) {
+        if (!board[r] || board[r].length !== 9) return false;
+    }
+    
+    for (let i = 0; i < 9; i++) {
+        let rowSet = new Set();
+        let colSet = new Set();
+        let boxSet = new Set();
+        
+        for (let j = 0; j < 9; j++) {
+            let valRow = board[i][j];
+            if (valRow < 1 || valRow > 9 || rowSet.has(valRow)) return false;
+            rowSet.add(valRow);
+            
+            let valCol = board[j][i];
+            if (valCol < 1 || valCol > 9 || colSet.has(valCol)) return false;
+            colSet.add(valCol);
+            
+            let boxRow = Math.floor(i / 3) * 3 + Math.floor(j / 3);
+            let boxCol = (i % 3) * 3 + (j % 3);
+            let valBox = board[boxRow][boxCol];
+            if (valBox < 1 || valBox > 9 || boxSet.has(valBox)) return false;
+            boxSet.add(valBox);
+        }
+    }
+    return true;
+}
+
+function isValidPuzzle(board) {
+    if (!board || board.length !== 9) return false;
+    for (let r = 0; r < 9; r++) {
+        if (!board[r] || board[r].length !== 9) return false;
+    }
+    
+    for (let i = 0; i < 9; i++) {
+        let rowSet = new Set();
+        let colSet = new Set();
+        let boxSet = new Set();
+        
+        for (let j = 0; j < 9; j++) {
+            let valRow = board[i][j];
+            if (valRow !== 0) {
+                if (valRow < 1 || valRow > 9 || rowSet.has(valRow)) return false;
+                rowSet.add(valRow);
+            }
+            
+            let valCol = board[j][i];
+            if (valCol !== 0) {
+                if (valCol < 1 || valCol > 9 || colSet.has(valCol)) return false;
+                colSet.add(valCol);
+            }
+            
+            let boxRow = Math.floor(i / 3) * 3 + Math.floor(j / 3);
+            let boxCol = (i % 3) * 3 + (j % 3);
+            let valBox = board[boxRow][boxCol];
+            if (valBox !== 0) {
+                if (valBox < 1 || valBox > 9 || boxSet.has(valBox)) return false;
+                boxSet.add(valBox);
+            }
+        }
+    }
+    return true;
+}
+
+function countSolutions(board, limit = 2) {
+    let count = 0;
+    
+    function solve(b) {
+        if (count >= limit) return;
+        
+        let minCandidates = 10;
+        let bestR = -1;
+        let bestC = -1;
+        let bestCandidates = [];
+        
+        for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+                if (b[r][c] === 0) {
+                    let candidates = [];
+                    for (let n = 1; n <= 9; n++) {
+                        if (isSafe(b, r, c, n)) {
+                            candidates.push(n);
                         }
-                        return;
+                    }
+                    if (candidates.length < minCandidates) {
+                        minCandidates = candidates.length;
+                        bestR = r;
+                        bestC = c;
+                        bestCandidates = candidates;
                     }
                 }
             }
-            count++;
         }
-        countSolutions(puzzleCopy);
-        if (count !== 1) {
-            puzzle[row][col] = backup;
-            attempts--;
+        
+        if (bestR === -1) {
+            count++;
+            return;
+        }
+        
+        if (minCandidates === 0) {
+            return;
+        }
+        
+        for (let n of bestCandidates) {
+            b[bestR][bestC] = n;
+            solve(b);
+            b[bestR][bestC] = 0;
+            if (count >= limit) return;
         }
     }
-    return { puzzle, solution };
+    
+    let boardCopy = deepCopy(board);
+    solve(boardCopy);
+    return count;
+}
+
+// Enkel sudoku-generator med validering och återförsök vid misslyckande
+function generateSudoku(difficulty) {
+    const targetRemoved = difficulty === 'easy' ? 30 : difficulty === 'medium' ? 45 : 55;
+    
+    for (let attempt = 1; attempt <= 100; attempt++) {
+        let solution = Array.from({length:9}, () => Array(9).fill(0));
+        if (!fillBoard(solution)) {
+            continue;
+        }
+        
+        let puzzle = deepCopy(solution);
+        
+        let cells = [];
+        for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+                cells.push({ r, c });
+            }
+        }
+        shuffle(cells);
+        
+        let removedCount = 0;
+        for (let cell of cells) {
+            if (removedCount >= targetRemoved) {
+                break;
+            }
+            
+            const { r, c } = cell;
+            const backup = puzzle[r][c];
+            puzzle[r][c] = 0;
+            
+            if (countSolutions(puzzle, 2) === 1) {
+                removedCount++;
+            } else {
+                puzzle[r][c] = backup;
+            }
+        }
+        
+        if (removedCount === targetRemoved && 
+            isValidPuzzle(puzzle) && 
+            isValidSolution(solution) && 
+            countSolutions(puzzle, 2) === 1) {
+            return { puzzle, solution };
+        }
+    }
+    
+    // Fallback om vi av någon anledning inte kan generera efter 100 försök (mycket osannolikt)
+    const fallbackPuzzle = deepCopy(boards[difficulty] || boards.easy);
+    const fallbackSolution = deepCopy(boards.mediumSolution);
+    return { puzzle: fallbackPuzzle, solution: fallbackSolution };
 }
 
 
