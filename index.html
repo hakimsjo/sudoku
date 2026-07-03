@@ -13,23 +13,44 @@
         }
         .sudoku-board {
             display: grid;
-            grid-template-columns: repeat(9, 40px);
-            grid-template-rows: repeat(9, 40px);
+            grid-template-columns: repeat(9, minmax(0, 1fr));
+            grid-template-rows: repeat(9, minmax(0, 1fr));
             gap: 2px;
             margin: 20px auto;
-            width: fit-content;
+            width: min(384px, calc(100vw - 24px));
+            box-sizing: border-box;
             border: 4px solid #333;
             background: #222;
         }
         .sudoku-cell {
-            width: 40px;
-            height: 40px;
+            width: 100%;
+            aspect-ratio: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            font-size: 1.5rem;
+            font-size: clamp(1rem, 5vw, 1.5rem);
             border: 1px solid #888;
             background: #fff;
             cursor: pointer;
             box-sizing: border-box;
+        }
+        .sudoku-value {
+            line-height: 1;
+        }
+        .sudoku-notes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            width: 100%;
+            height: 100%;
+            padding: 3px;
+            align-items: center;
+            justify-items: center;
+            font-size: clamp(0.52rem, 2.2vw, 0.68rem);
+            line-height: 1;
+            color: #555;
         }
         /* Kraftigare ramar för 3x3-block */
         .sudoku-cell.thick-top { border-top: 6px solid #111 !important; }
@@ -79,6 +100,9 @@
             background: #222 !important;
             color: #fff !important;
             border-color: #666;
+        }
+        body.bg-dark .sudoku-notes {
+            color: #ddd;
         }
         body.bg-dark .sudoku-cell.prefilled {
             background: #444 !important;
@@ -137,6 +161,12 @@
                     <button class="btn btn-outline-secondary num-btn" data-num="7">7️⃣</button>
                     <button class="btn btn-outline-secondary num-btn" data-num="8">8️⃣</button>
                     <button class="btn btn-outline-secondary num-btn" data-num="9">9️⃣</button>
+                </div>
+                <div class="btn-group mb-2" role="group" aria-label="Inmatningsläge">
+                    <input type="radio" class="btn-check" name="entryMode" id="valueMode" value="value" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary" for="valueMode">Värde</label>
+                    <input type="radio" class="btn-check" name="entryMode" id="noteMode" value="note" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="noteMode">Notering</label>
                 </div>
                 <div class="d-flex justify-content-center mb-2">
                     <button class="btn btn-outline-danger ms-2" id="clearBtn">🧹 Rensa</button>

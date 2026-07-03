@@ -50,15 +50,21 @@ const boards = {
 
 let initialBoard = [];
 let currentBoard = [];
+let notesBoard = [];
 let solution = [];
 let selectedCell = null;
 let timer = 0;
 let timerInterval = null;
 let difficulty = 'easy';
 let checkResult = null; // To store check results ('right', 'wrong')
+let entryMode = 'value';
 
 function deepCopy(board) {
     return board.map(row => row.slice());
+}
+
+function createEmptyNotesBoard() {
+    return Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => []));
 }
 
 
@@ -150,6 +156,7 @@ function generateBoard(diff) {
     const { puzzle, solution: sol } = generateSudoku(diff);
     initialBoard = deepCopy(puzzle);
     currentBoard = deepCopy(puzzle);
+    notesBoard = createEmptyNotesBoard();
     solution = deepCopy(sol);
 }
 
@@ -170,13 +177,19 @@ function renderBoard() {
             if (c === 8) cell.classList.add('thick-right');
 
             if (initialBoard[r][c] !== 0) {
-                cell.textContent = initialBoard[r][c];
+                const value = document.createElement('span');
+                value.className = 'sudoku-value';
+                value.textContent = initialBoard[r][c];
+                cell.appendChild(value);
                 cell.classList.add('prefilled');
             } else {
                 if (currentBoard[r][c] !== 0) {
-                    cell.textContent = currentBoard[r][c];
+                    const value = document.createElement('span');
+                    value.className = 'sudoku-value';
+                    value.textContent = currentBoard[r][c];
+                    cell.appendChild(value);
                 } else {
-                    cell.textContent = '';
+                    renderNotes(cell, notesBoard[r][c]);
                 }
                 
                 // Apply check result classes
@@ -200,6 +213,21 @@ function renderBoard() {
     }
 }
 
+function renderNotes(cell, notes) {
+    if (!notes.length) return;
+
+    const notesGrid = document.createElement('div');
+    notesGrid.className = 'sudoku-notes';
+
+    notes.forEach(note => {
+        const noteElement = document.createElement('span');
+        noteElement.textContent = note;
+        notesGrid.appendChild(noteElement);
+    });
+
+    cell.appendChild(notesGrid);
+}
+
 // Add CSS for cell highlighting
 if (typeof window !== 'undefined') {
     const style = document.createElement('style');
@@ -220,7 +248,14 @@ function fillCell(num) {
     if (!selectedCell) return;
     const [r, c] = selectedCell;
     if (initialBoard[r][c] !== 0) return;
+
+    if (entryMode === 'note') {
+        toggleNote(r, c, num);
+        return;
+    }
+
     currentBoard[r][c] = num;
+    notesBoard[r][c] = [];
     renderBoard();
     if (isBoardFull()) {
         if (isSolved()) {
@@ -233,11 +268,29 @@ function fillCell(num) {
     }
 }
 
+function toggleNote(r, c, num) {
+    if (currentBoard[r][c] !== 0) return;
+
+    const notes = notesBoard[r][c];
+    if (notes.includes(num)) {
+        notesBoard[r][c] = notes.filter(note => note !== num);
+    } else if (notes.length < 4) {
+        notesBoard[r][c] = [...notes, num].sort((a, b) => a - b);
+    }
+
+    renderBoard();
+}
+
 function clearCell() {
     if (!selectedCell) return;
     const [r, c] = selectedCell;
     if (initialBoard[r][c] !== 0) return;
-    currentBoard[r][c] = 0;
+    if (entryMode === 'note' && currentBoard[r][c] === 0) {
+        notesBoard[r][c] = [];
+    } else {
+        currentBoard[r][c] = 0;
+        notesBoard[r][c] = [];
+    }
     renderBoard();
 }
 
@@ -318,6 +371,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.num-btn').forEach(btn => {
         btn.onclick = () => fillCell(Number(btn.dataset.num));
     });
+    document.querySelectorAll('input[name="entryMode"]').forEach(input => {
+        input.onchange = e => {
+            entryMode = e.target.value;
+        };
+    });
     document.getElementById('clearBtn').onclick = clearCell;
     
     document.getElementById('checkBtn').onclick = () => {
@@ -370,6 +428,9 @@ function newGame() {
     generateBoard(difficulty);
     selectedCell = null;
     checkResult = null;
+    entryMode = 'value';
+    const valueMode = document.getElementById('valueMode');
+    if (valueMode) valueMode.checked = true;
     renderBoard();
     startTimer();
 }

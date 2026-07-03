@@ -8,6 +8,7 @@ Ett litet sudoku-spel för webbläsare med tre svårighetsgrader, highscore och 
 - Tre svårighetsgrader: Lätt, Medel, Svår
 - Highscore-lista
 - Timer
+- Upp till fyra noteringar per ruta
 - Mörkt/ljust läge
 - Responsiv design med Bootstrap
 
@@ -25,7 +26,7 @@ Testa spelet direkt här:
 Ingen installation av beroenden krävs.
 
 ## Användning
-Välj svårighetsgrad, fyll i rutorna och försök lösa sudokut så snabbt som möjligt! Du kan byta mellan mörkt och ljust läge samt se highscore.
+Välj svårighetsgrad, fyll i rutorna och försök lösa sudokut så snabbt som möjligt! Växla mellan Värde och Notering för att antingen fylla i en ruta eller lägga till små kandidatsiffror. Du kan byta mellan mörkt och ljust läge samt se highscore.
 
 ## Licens
 MIT
