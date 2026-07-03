@@ -96,6 +96,21 @@
             max-width: 300px;
             margin: 0 auto;
         }
+        #highscoreModal {
+            background: rgba(0, 0, 0, 0.5);
+        }
+        #highscoreModal.show {
+            display: block;
+        }
+        body.bg-dark .modal-content {
+            background: #24282d;
+            color: #f1f3f5;
+        }
+        body.bg-dark .list-group-item {
+            background: #1f1f1f;
+            color: #f1f3f5;
+            border-color: #4b4f54;
+        }
         /* Förbättrad synlighet i mörkt läge */
         body.bg-dark .sudoku-board {
             border-color: #6f7680;
@@ -151,7 +166,8 @@
                 <button id="highscoreBtn" class="btn btn-info">🏆 Highscore</button>
             </div>
         </div>
-        <div id="timer" class="mb-2">Tid: 0:00</div>
+        <div id="timer" class="mb-1">Tid: 0:00</div>
+        <div id="score" class="mb-2">Poäng: 0 | Fel: 0</div>
         <div id="sudoku-board" class="sudoku-board"></div>
         <div class="sudoku-controls mt-3">
             <div class="d-flex flex-column align-items-center">
@@ -182,12 +198,12 @@
                 <button id="toggleTheme" class="btn btn-dark btn-darkmode mt-2">🌓 Mörkt/Ljust läge</button>
             </div>
         </div>
-        <div id="highscoreModal" class="modal" tabindex="-1">
+        <div id="highscoreModal" class="modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="highscoreTitle">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Highscore</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <h5 id="highscoreTitle" class="modal-title">Highscore</h5>
+                        <button type="button" class="btn-close" id="closeHighscoreBtn" aria-label="Stäng"></button>
                     </div>
                     <div class="modal-body">
                         <ul id="highscoreList" class="list-group highscore-list"></ul>

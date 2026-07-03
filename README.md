@@ -8,6 +8,7 @@ Ett litet sudoku-spel för webbläsare med tre svårighetsgrader, highscore och 
 - Tre svårighetsgrader: Lätt, Medel, Svår
 - Highscore-lista
 - Timer
+- Poängsystem baserat på tid, fel och svårighetsgrad
 - Upp till fyra noteringar per ruta
 - Pågående spel sparas automatiskt i webbläsaren
 - Mörkt/ljust läge

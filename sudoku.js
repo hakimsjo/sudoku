@@ -58,7 +58,16 @@ let timerInterval = null;
 let difficulty = 'easy';
 let checkResult = null; // To store check results ('right', 'wrong')
 let entryMode = 'value';
+let mistakeCount = 0;
+let mistakeHistory = [];
 const savedGameKey = 'sudoku_saved_game';
+const scoreBaseByDifficulty = {
+    easy: 10000,
+    medium: 15000,
+    hard: 22000
+};
+const timePenaltyPerSecond = 10;
+const mistakePenalty = 250;
 
 function deepCopy(board) {
     return board.map(row => row.slice());
@@ -83,6 +92,30 @@ function updateTimerDisplay() {
     const min = Math.floor(timer/60);
     const sec = timer%60;
     document.getElementById('timer').textContent = `Tid: ${min}:${sec.toString().padStart(2,'0')}`;
+    updateScoreDisplay();
+}
+
+function calculateScore() {
+    const baseScore = scoreBaseByDifficulty[difficulty] || scoreBaseByDifficulty.easy;
+    return Math.max(0, baseScore - (timer * timePenaltyPerSecond) - (mistakeCount * mistakePenalty));
+}
+
+function updateScoreDisplay() {
+    const scoreElement = document.getElementById('score');
+    if (!scoreElement) return;
+    scoreElement.textContent = `Poäng: ${calculateScore()} | Fel: ${mistakeCount}`;
+}
+
+function registerMistake(row, col, value) {
+    if (!value) return;
+
+    const key = `${row}-${col}-${value}`;
+    if (mistakeHistory.includes(key)) return;
+
+    mistakeHistory.push(key);
+    mistakeCount++;
+    updateScoreDisplay();
+    saveGameState();
 }
 
 function saveGameState() {
@@ -97,6 +130,8 @@ function saveGameState() {
         timer,
         difficulty,
         entryMode,
+        mistakeCount,
+        mistakeHistory,
         darkMode: document.body.classList.contains('bg-dark')
     };
 
@@ -131,6 +166,8 @@ function restoreSavedGame() {
         timer = Number.isInteger(state.timer) && state.timer >= 0 ? state.timer : 0;
         difficulty = state.difficulty || 'easy';
         entryMode = state.entryMode === 'note' ? 'note' : 'value';
+        mistakeCount = Number.isInteger(state.mistakeCount) && state.mistakeCount >= 0 ? state.mistakeCount : 0;
+        mistakeHistory = Array.isArray(state.mistakeHistory) ? state.mistakeHistory : [];
         checkResult = null;
 
         document.body.classList.toggle('bg-dark', state.darkMode === true);
@@ -341,8 +378,9 @@ function fillCell(num) {
             stopTimer();
             saveHighscore();
             clearSavedGame();
-            setTimeout(() => alert('Grattis! Du löste sudokut!'), 100);
+            setTimeout(() => alert(`Grattis! Du löste sudokut och fick ${calculateScore()} poäng!`), 100);
         } else {
+            registerBoardMistakes();
             setTimeout(() => alert('Fel lösning!'), 100);
         }
     }
@@ -370,8 +408,11 @@ function clearBoard() {
     notesBoard = createEmptyNotesBoard();
     selectedCell = null;
     checkResult = null;
+    mistakeCount = 0;
+    mistakeHistory = [];
     saveGameState();
     renderBoard();
+    updateScoreDisplay();
 }
 
 function isBoardFull() {
@@ -387,6 +428,15 @@ function isSolved() {
     return true;
 }
 
+function registerBoardMistakes() {
+    for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+            if (initialBoard[r][c] === 0 && currentBoard[r][c] !== 0 && currentBoard[r][c] !== solution[r][c]) {
+                registerMistake(r, c, currentBoard[r][c]);
+            }
+        }
+    }
+}
 
 
 function startTimer(reset = true) {
@@ -407,10 +457,36 @@ function stopTimer() {
 function saveHighscore() {
     const scores = JSON.parse(localStorage.getItem('sudoku_highscores') || '{}');
     if (!scores[difficulty]) scores[difficulty] = [];
-    scores[difficulty].push(timer);
-    scores[difficulty].sort((a,b)=>a-b);
+
+    scores[difficulty].push({
+        score: calculateScore(),
+        time: timer,
+        mistakes: mistakeCount,
+        completedAt: new Date().toISOString()
+    });
+    scores[difficulty].sort((a, b) => {
+        const scoreDiff = getScoreValue(b) - getScoreValue(a);
+        if (scoreDiff !== 0) return scoreDiff;
+        return getTimeValue(a) - getTimeValue(b);
+    });
     scores[difficulty] = scores[difficulty].slice(0,5);
     localStorage.setItem('sudoku_highscores', JSON.stringify(scores));
+}
+
+function getScoreValue(scoreEntry) {
+    if (typeof scoreEntry === 'number') return -scoreEntry;
+    return Number.isInteger(scoreEntry.score) ? scoreEntry.score : 0;
+}
+
+function getTimeValue(scoreEntry) {
+    if (typeof scoreEntry === 'number') return scoreEntry;
+    return Number.isInteger(scoreEntry.time) ? scoreEntry.time : 0;
+}
+
+function formatTime(totalSeconds) {
+    const min = Math.floor(totalSeconds/60);
+    const sec = totalSeconds%60;
+    return `${min}:${sec.toString().padStart(2,'0')}`;
 }
 
 function showHighscore() {
@@ -422,16 +498,31 @@ function showHighscore() {
         list.innerHTML = '<li class="list-group-item">Inga highscores än!</li>';
     } else {
         arr.forEach((s,i) => {
-            const min = Math.floor(s/60);
-            const sec = s%60;
             const li = document.createElement('li');
             li.className = 'list-group-item';
-            li.textContent = `${i+1}. ${min}:${sec.toString().padStart(2,'0')}`;
+            if (typeof s === 'number') {
+                li.textContent = `${i+1}. ${formatTime(s)} (äldre tidresultat)`;
+            } else {
+                li.textContent = `${i+1}. ${s.score} poäng | ${formatTime(s.time)} | ${s.mistakes || 0} fel`;
+            }
             list.appendChild(li);
         });
     }
-    const modal = new bootstrap.Modal(document.getElementById('highscoreModal'));
-    modal.show();
+    openHighscoreModal();
+}
+
+function openHighscoreModal() {
+    const modal = document.getElementById('highscoreModal');
+    modal.classList.add('show');
+    modal.style.display = 'block';
+    document.body.classList.add('modal-open');
+}
+
+function closeHighscoreModal() {
+    const modal = document.getElementById('highscoreModal');
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    document.body.classList.remove('modal-open');
 }
 
 function toggleTheme() {
@@ -475,6 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         checkResult[r][c] = 'right';
                     } else {
                         checkResult[r][c] = 'wrong';
+                        registerMistake(r, c, currentBoard[r][c]);
                         allCorrect = false;
                     }
                 } else {
@@ -490,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
             stopTimer();
             saveHighscore();
             clearSavedGame();
-            setTimeout(() => alert('Grattis! Du löste sudokut!'), 100);
+            setTimeout(() => alert(`Grattis! Du löste sudokut och fick ${calculateScore()} poäng!`), 100);
         } else {
             // Clear highlights after 5 seconds
             setTimeout(() => {
@@ -502,6 +594,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('newGameBtn').onclick = newGame;
     document.getElementById('highscoreBtn').onclick = showHighscore;
+    document.getElementById('closeHighscoreBtn').onclick = closeHighscoreModal;
+    document.getElementById('highscoreModal').onclick = e => {
+        if (e.target.id === 'highscoreModal') closeHighscoreModal();
+    };
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeHighscoreModal();
+    });
     document.getElementById('toggleTheme').onclick = toggleTheme;
     if (restoreSavedGame()) {
         document.getElementById('difficulty').value = difficulty;
@@ -519,6 +618,8 @@ function newGame() {
     selectedCell = null;
     checkResult = null;
     entryMode = 'value';
+    mistakeCount = 0;
+    mistakeHistory = [];
     const valueMode = document.getElementById('valueMode');
     if (valueMode) valueMode.checked = true;
     renderBoard();
