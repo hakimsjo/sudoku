@@ -93,24 +93,68 @@
             margin-left: 10px;
         }
         .highscore-list {
-            max-width: 300px;
+            width: 100%;
             margin: 0 auto;
         }
-        #highscoreModal {
-            background: rgba(0, 0, 0, 0.5);
+        .modal {
+            transition: background-color 0.25s ease;
+            background: rgba(15, 23, 42, 0.4) !important;
+            backdrop-filter: blur(6px);
         }
-        #highscoreModal.show {
-            display: block;
+        .modal-content {
+            border-radius: 16px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
         }
+        
+        /* Light mode modals */
+        body.bg-light .modal-content {
+            background: rgba(255, 255, 255, 0.98);
+            color: #1e293b;
+        }
+        body.bg-light .highscore-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+        body.bg-light .highscore-item:hover {
+            background: #f1f5f9;
+            transform: translateY(-1px);
+        }
+        
+        /* Dark mode modals */
         body.bg-dark .modal-content {
-            background: #24282d;
-            color: #f1f3f5;
+            background: #1e293b !important;
+            color: #f8fafc !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
         }
-        body.bg-dark .list-group-item {
-            background: #1f1f1f;
-            color: #f1f3f5;
-            border-color: #4b4f54;
+        body.bg-dark .highscore-item {
+            background: #334155 !important;
+            border: 1px solid #475569;
+            transition: all 0.2s ease;
         }
+        body.bg-dark .highscore-item:hover {
+            background: #3e4e63 !important;
+            transform: translateY(-1px);
+        }
+        body.bg-dark .modal-header .btn-close {
+            filter: invert(1);
+        }
+
+        /* Highscore elements */
+        .highscore-item {
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .rank-badge {
+            font-size: 1.25rem;
+            width: 32px;
+            text-align: center;
+        }
+        .score-val {
+            font-size: 1.05rem;
+        }
+
         /* Förbättrad synlighet i mörkt läge */
         body.bg-dark .sudoku-board {
             border-color: #6f7680;
@@ -150,6 +194,31 @@
         body.bg-dark .sudoku-cell[style*="background: #ffcdd2"] {
             background: #b71c1c !important;
             color: #fff !important;
+        }
+
+        /* Mobilanpassning */
+        @media (max-width: 480px) {
+            .container {
+                padding-left: 8px !important;
+                padding-right: 8px !important;
+            }
+            .sudoku-cell {
+                font-size: clamp(0.9rem, 4.5vw, 1.2rem);
+            }
+            .sudoku-notes {
+                font-size: clamp(0.48rem, 2vw, 0.6rem);
+            }
+            .btn-group .btn {
+                padding: 6px 10px;
+                font-size: 0.85rem;
+            }
+            .num-btn {
+                font-size: 1rem !important;
+            }
+            .sudoku-controls button {
+                padding: 6px 10px;
+                font-size: 0.85rem;
+            }
         }
     </style>
 </head>
@@ -198,15 +267,35 @@
                 <button id="toggleTheme" class="btn btn-dark btn-darkmode mt-2">🌓 Mörkt/Ljust läge</button>
             </div>
         </div>
+        <!-- Highscore Modal -->
         <div id="highscoreModal" class="modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="highscoreTitle">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 id="highscoreTitle" class="modal-title">Highscore</h5>
+                    <div class="modal-header border-0 pb-0">
+                        <h4 id="highscoreTitle" class="modal-title fw-bold text-center w-100 ps-4">🏆 Highscore</h4>
                         <button type="button" class="btn-close" id="closeHighscoreBtn" aria-label="Stäng"></button>
                     </div>
-                    <div class="modal-body">
-                        <ul id="highscoreList" class="list-group highscore-list"></ul>
+                    <div class="modal-body p-4">
+                        <div id="highscoreList" class="highscore-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rensa Bekräftelse Modal -->
+        <div id="confirmModal" class="modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 id="confirmTitle" class="modal-title fw-bold">Rensa spelplanen?</h5>
+                        <button type="button" class="btn-close" id="closeConfirmBtn" aria-label="Stäng"></button>
+                    </div>
+                    <div class="modal-body py-3">
+                        <p class="mb-0">Är du säker på att du vill återställa hela brädet? Dina egna siffror och felnoteringar kommer att tas bort.</p>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-secondary px-3" id="cancelConfirmBtn">Avbryt</button>
+                        <button type="button" class="btn btn-danger px-3" id="actionConfirmBtn">Rensa allt</button>
                     </div>
                 </div>
             </div>

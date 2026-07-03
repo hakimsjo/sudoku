@@ -530,8 +530,10 @@ function toggleNote(r, c, num) {
 }
 
 function clearBoard() {
-    if (!confirm('Vill du rensa hela brädet?')) return;
+    openConfirmModal();
+}
 
+function executeClearBoard() {
     currentBoard = deepCopy(initialBoard);
     notesBoard = createEmptyNotesBoard();
     selectedCell = null;
@@ -541,6 +543,7 @@ function clearBoard() {
     saveGameState();
     renderBoard();
     updateScoreDisplay();
+    closeConfirmModal();
 }
 
 function isBoardFull() {
@@ -623,17 +626,37 @@ function showHighscore() {
     list.innerHTML = '';
     const arr = scores[difficulty] || [];
     if (arr.length === 0) {
-        list.innerHTML = '<li class="list-group-item">Inga highscores än!</li>';
+        list.innerHTML = '<div class="text-center text-muted my-3">Inga sparade resultat än! Spela ett spel för att hamna på listan.</div>';
     } else {
-        arr.forEach((s,i) => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item';
+        arr.forEach((s, i) => {
+            const item = document.createElement('div');
+            item.className = 'highscore-item d-flex align-items-center justify-content-between p-3 mb-2';
+            
+            let rankIcon = '';
+            if (i === 0) rankIcon = '🥇';
+            else if (i === 1) rankIcon = '🥈';
+            else if (i === 2) rankIcon = '🥉';
+            else rankIcon = `#${i + 1}`;
+            
+            const rankSpan = document.createElement('span');
+            rankSpan.className = 'fw-bold rank-badge';
+            rankSpan.textContent = rankIcon;
+
+            const detailsDiv = document.createElement('div');
+            detailsDiv.className = 'flex-grow-1 ms-3 text-start';
+            
             if (typeof s === 'number') {
-                li.textContent = `${i+1}. ${formatTime(s)} (äldre tidresultat)`;
+                detailsDiv.innerHTML = `<span class="score-val fw-bold">${formatTime(s)}</span> <small class="text-muted">(äldre tidresultat)</small>`;
             } else {
-                li.textContent = `${i+1}. ${s.score} poäng | ${formatTime(s.time)} | ${s.mistakes || 0} fel`;
+                detailsDiv.innerHTML = `
+                    <div class="fw-bold score-val text-primary-emphasis">${s.score} poäng</div>
+                    <small class="text-muted">Tid: ${formatTime(s.time)} | Fel: ${s.mistakes || 0}</small>
+                `;
             }
-            list.appendChild(li);
+            
+            item.appendChild(rankSpan);
+            item.appendChild(detailsDiv);
+            list.appendChild(item);
         });
     }
     openHighscoreModal();
@@ -648,6 +671,20 @@ function openHighscoreModal() {
 
 function closeHighscoreModal() {
     const modal = document.getElementById('highscoreModal');
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    document.body.classList.remove('modal-open');
+}
+
+function openConfirmModal() {
+    const modal = document.getElementById('confirmModal');
+    modal.classList.add('show');
+    modal.style.display = 'block';
+    document.body.classList.add('modal-open');
+}
+
+function closeConfirmModal() {
+    const modal = document.getElementById('confirmModal');
     modal.classList.remove('show');
     modal.style.display = 'none';
     document.body.classList.remove('modal-open');
@@ -726,8 +763,20 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('highscoreModal').onclick = e => {
         if (e.target.id === 'highscoreModal') closeHighscoreModal();
     };
+    
+    // Rensa bekräftelse lyssnare
+    document.getElementById('actionConfirmBtn').onclick = executeClearBoard;
+    document.getElementById('cancelConfirmBtn').onclick = closeConfirmModal;
+    document.getElementById('closeConfirmBtn').onclick = closeConfirmModal;
+    document.getElementById('confirmModal').onclick = e => {
+        if (e.target.id === 'confirmModal') closeConfirmModal();
+    };
+
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') closeHighscoreModal();
+        if (e.key === 'Escape') {
+            closeHighscoreModal();
+            closeConfirmModal();
+        }
     });
     document.getElementById('toggleTheme').onclick = toggleTheme;
     if (restoreSavedGame()) {
