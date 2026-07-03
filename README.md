@@ -9,6 +9,7 @@ Ett litet sudoku-spel för webbläsare med tre svårighetsgrader, highscore och 
 - Highscore-lista
 - Timer
 - Upp till fyra noteringar per ruta
+- Pågående spel sparas automatiskt i webbläsaren
 - Mörkt/ljust läge
 - Responsiv design med Bootstrap
 

@@ -58,6 +58,7 @@ let timerInterval = null;
 let difficulty = 'easy';
 let checkResult = null; // To store check results ('right', 'wrong')
 let entryMode = 'value';
+const savedGameKey = 'sudoku_saved_game';
 
 function deepCopy(board) {
     return board.map(row => row.slice());
@@ -65,6 +66,82 @@ function deepCopy(board) {
 
 function createEmptyNotesBoard() {
     return Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => []));
+}
+
+function isValidBoard(board) {
+    return Array.isArray(board) &&
+        board.length === 9 &&
+        board.every(row => Array.isArray(row) && row.length === 9);
+}
+
+function isValidNotesBoard(board) {
+    return isValidBoard(board) &&
+        board.every(row => row.every(notes => Array.isArray(notes) && notes.length <= 4));
+}
+
+function updateTimerDisplay() {
+    const min = Math.floor(timer/60);
+    const sec = timer%60;
+    document.getElementById('timer').textContent = `Tid: ${min}:${sec.toString().padStart(2,'0')}`;
+}
+
+function saveGameState() {
+    if (!initialBoard.length || !currentBoard.length || !solution.length) return;
+
+    const state = {
+        initialBoard,
+        currentBoard,
+        notesBoard,
+        solution,
+        selectedCell,
+        timer,
+        difficulty,
+        entryMode,
+        darkMode: document.body.classList.contains('bg-dark')
+    };
+
+    localStorage.setItem(savedGameKey, JSON.stringify(state));
+}
+
+function clearSavedGame() {
+    localStorage.removeItem(savedGameKey);
+}
+
+function restoreSavedGame() {
+    const saved = localStorage.getItem(savedGameKey);
+    if (!saved) return false;
+
+    try {
+        const state = JSON.parse(saved);
+        if (
+            !isValidBoard(state.initialBoard) ||
+            !isValidBoard(state.currentBoard) ||
+            !isValidBoard(state.solution) ||
+            !isValidNotesBoard(state.notesBoard)
+        ) {
+            clearSavedGame();
+            return false;
+        }
+
+        initialBoard = deepCopy(state.initialBoard);
+        currentBoard = deepCopy(state.currentBoard);
+        notesBoard = state.notesBoard.map(row => row.map(notes => notes.slice(0, 4)));
+        solution = deepCopy(state.solution);
+        selectedCell = Array.isArray(state.selectedCell) ? state.selectedCell : null;
+        timer = Number.isInteger(state.timer) && state.timer >= 0 ? state.timer : 0;
+        difficulty = state.difficulty || 'easy';
+        entryMode = state.entryMode === 'note' ? 'note' : 'value';
+        checkResult = null;
+
+        document.body.classList.toggle('bg-dark', state.darkMode === true);
+        document.body.classList.toggle('bg-light', state.darkMode !== true);
+        document.body.classList.toggle('text-light', state.darkMode === true);
+
+        return true;
+    } catch (error) {
+        clearSavedGame();
+        return false;
+    }
 }
 
 
@@ -254,13 +331,16 @@ function fillCell(num) {
         return;
     }
 
-    currentBoard[r][c] = num;
+    currentBoard[r][c] = currentBoard[r][c] === num ? 0 : num;
     notesBoard[r][c] = [];
+    checkResult = null;
+    saveGameState();
     renderBoard();
     if (isBoardFull()) {
         if (isSolved()) {
             stopTimer();
             saveHighscore();
+            clearSavedGame();
             setTimeout(() => alert('Grattis! Du löste sudokut!'), 100);
         } else {
             setTimeout(() => alert('Fel lösning!'), 100);
@@ -278,19 +358,19 @@ function toggleNote(r, c, num) {
         notesBoard[r][c] = [...notes, num].sort((a, b) => a - b);
     }
 
+    checkResult = null;
+    saveGameState();
     renderBoard();
 }
 
-function clearCell() {
-    if (!selectedCell) return;
-    const [r, c] = selectedCell;
-    if (initialBoard[r][c] !== 0) return;
-    if (entryMode === 'note' && currentBoard[r][c] === 0) {
-        notesBoard[r][c] = [];
-    } else {
-        currentBoard[r][c] = 0;
-        notesBoard[r][c] = [];
-    }
+function clearBoard() {
+    if (!confirm('Vill du rensa hela brädet?')) return;
+
+    currentBoard = deepCopy(initialBoard);
+    notesBoard = createEmptyNotesBoard();
+    selectedCell = null;
+    checkResult = null;
+    saveGameState();
     renderBoard();
 }
 
@@ -309,15 +389,14 @@ function isSolved() {
 
 
 
-function startTimer() {
-    timer = 0;
-    document.getElementById('timer').textContent = 'Tid: 0:00';
+function startTimer(reset = true) {
+    if (reset) timer = 0;
+    updateTimerDisplay();
     if (timerInterval) clearInterval(timerInterval);
     timerInterval = setInterval(() => {
         timer++;
-        const min = Math.floor(timer/60);
-        const sec = timer%60;
-        document.getElementById('timer').textContent = `Tid: ${min}:${sec.toString().padStart(2,'0')}`;
+        updateTimerDisplay();
+        saveGameState();
     }, 1000);
 }
 
@@ -360,6 +439,7 @@ function toggleTheme() {
     body.classList.toggle('bg-light');
     body.classList.toggle('bg-dark');
     body.classList.toggle('text-light');
+    saveGameState();
 }
 
 
@@ -374,9 +454,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('input[name="entryMode"]').forEach(input => {
         input.onchange = e => {
             entryMode = e.target.value;
+            saveGameState();
         };
     });
-    document.getElementById('clearBtn').onclick = clearCell;
+    document.getElementById('clearBtn').onclick = clearBoard;
     
     document.getElementById('checkBtn').onclick = () => {
         if (!currentBoard || !solution) return;
@@ -408,6 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (boardFull && allCorrect) {
             stopTimer();
             saveHighscore();
+            clearSavedGame();
             setTimeout(() => alert('Grattis! Du löste sudokut!'), 100);
         } else {
             // Clear highlights after 5 seconds
@@ -421,7 +503,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('newGameBtn').onclick = newGame;
     document.getElementById('highscoreBtn').onclick = showHighscore;
     document.getElementById('toggleTheme').onclick = toggleTheme;
-    newGame();
+    if (restoreSavedGame()) {
+        document.getElementById('difficulty').value = difficulty;
+        const modeInput = document.querySelector(`input[name="entryMode"][value="${entryMode}"]`);
+        if (modeInput) modeInput.checked = true;
+        renderBoard();
+        startTimer(false);
+    } else {
+        newGame();
+    }
 });
 
 function newGame() {
@@ -433,4 +523,5 @@ function newGame() {
     if (valueMode) valueMode.checked = true;
     renderBoard();
     startTimer();
+    saveGameState();
 }
