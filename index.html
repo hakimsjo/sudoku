@@ -154,6 +154,54 @@
         .score-val {
             font-size: 1.05rem;
         }
+        .win-modal-content {
+            overflow: hidden;
+        }
+        .win-celebration {
+            position: relative;
+            width: 92px;
+            height: 92px;
+            margin: 0 auto 16px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 30% 25%, #fff8c5 0 12%, transparent 13%),
+                linear-gradient(145deg, #ffe082, #ffb300);
+            box-shadow: 0 14px 28px rgba(255, 179, 0, 0.28);
+        }
+        .win-celebration::before,
+        .win-celebration::after {
+            content: "";
+            position: absolute;
+            inset: -18px;
+            background:
+                radial-gradient(circle, #0dcaf0 0 3px, transparent 4px) 0 10px / 42px 42px,
+                radial-gradient(circle, #dc3545 0 3px, transparent 4px) 18px 2px / 46px 46px,
+                radial-gradient(circle, #198754 0 3px, transparent 4px) 10px 24px / 50px 50px;
+            opacity: 0.85;
+            pointer-events: none;
+        }
+        .win-celebration::after {
+            transform: rotate(28deg);
+            opacity: 0.55;
+        }
+        .win-icon {
+            position: relative;
+            z-index: 1;
+            font-size: 3rem;
+            line-height: 1;
+        }
+        .win-stat {
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+        }
+        body.bg-dark .win-stat {
+            background: #334155;
+            border-color: #475569;
+        }
 
         /* Förbättrad synlighet i mörkt läge */
         body.bg-dark .sudoku-board {
@@ -296,6 +344,42 @@
                     <div class="modal-footer border-0 pt-0">
                         <button type="button" class="btn btn-secondary px-3" id="cancelConfirmBtn">Avbryt</button>
                         <button type="button" class="btn btn-danger px-3" id="actionConfirmBtn">Rensa allt</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vinst Modal -->
+        <div id="winModal" class="modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content win-modal-content">
+                    <div class="modal-header border-0 pb-0">
+                        <button type="button" class="btn-close ms-auto" id="closeWinBtn" aria-label="Stäng"></button>
+                    </div>
+                    <div class="modal-body text-center px-4 pb-4 pt-1">
+                        <div class="win-celebration" aria-hidden="true">
+                            <span class="win-icon">🏆</span>
+                        </div>
+                        <h4 id="winTitle" class="modal-title fw-bold mb-2">Grattis, du vann!</h4>
+                        <p class="text-muted mb-4">Sudokut är löst och resultatet är sparat i highscore-listan.</p>
+                        <div class="row g-2 mb-4">
+                            <div class="col-6">
+                                <div class="win-stat">
+                                    <div class="small text-muted">Poäng</div>
+                                    <div id="winScore" class="fw-bold fs-5">0</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="win-stat">
+                                    <div class="small text-muted">Tid</div>
+                                    <div id="winTime" class="fw-bold fs-5">0:00</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <button type="button" class="btn btn-outline-secondary px-3" id="viewHighscoreFromWinBtn">Visa highscore</button>
+                            <button type="button" class="btn btn-primary px-3" id="newGameFromWinBtn">Nytt spel</button>
+                        </div>
                     </div>
                 </div>
             </div>

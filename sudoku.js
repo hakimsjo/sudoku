@@ -506,7 +506,7 @@ function fillCell(num) {
             stopTimer();
             saveHighscore();
             clearSavedGame();
-            setTimeout(() => alert(`Grattis! Du löste sudokut och fick ${calculateScore()} poäng!`), 100);
+            setTimeout(showWinModal, 100);
         } else {
             registerBoardMistakes();
             setTimeout(() => alert('Fel lösning!'), 100);
@@ -690,6 +690,29 @@ function closeConfirmModal() {
     document.body.classList.remove('modal-open');
 }
 
+function showWinModal() {
+    const scoreElement = document.getElementById('winScore');
+    const timeElement = document.getElementById('winTime');
+    const modal = document.getElementById('winModal');
+
+    if (scoreElement) scoreElement.textContent = calculateScore();
+    if (timeElement) timeElement.textContent = formatTime(timer);
+    if (!modal) return;
+
+    modal.classList.add('show');
+    modal.style.display = 'block';
+    document.body.classList.add('modal-open');
+}
+
+function closeWinModal() {
+    const modal = document.getElementById('winModal');
+    if (!modal) return;
+
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    document.body.classList.remove('modal-open');
+}
+
 function toggleTheme() {
     const body = document.body;
     body.classList.toggle('bg-light');
@@ -747,7 +770,7 @@ document.addEventListener('DOMContentLoaded', () => {
             stopTimer();
             saveHighscore();
             clearSavedGame();
-            setTimeout(() => alert(`Grattis! Du löste sudokut och fick ${calculateScore()} poäng!`), 100);
+            setTimeout(showWinModal, 100);
         } else {
             // Clear highlights after 5 seconds
             setTimeout(() => {
@@ -772,10 +795,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.id === 'confirmModal') closeConfirmModal();
     };
 
+    document.getElementById('closeWinBtn').onclick = closeWinModal;
+    document.getElementById('newGameFromWinBtn').onclick = () => {
+        closeWinModal();
+        newGame();
+    };
+    document.getElementById('viewHighscoreFromWinBtn').onclick = () => {
+        closeWinModal();
+        showHighscore();
+    };
+    document.getElementById('winModal').onclick = e => {
+        if (e.target.id === 'winModal') closeWinModal();
+    };
+
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             closeHighscoreModal();
             closeConfirmModal();
+            closeWinModal();
         }
     });
     document.getElementById('toggleTheme').onclick = toggleTheme;
