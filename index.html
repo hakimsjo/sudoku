@@ -89,6 +89,24 @@
             margin: 20px auto;
             width: fit-content;
         }
+        .number-completion {
+            display: grid;
+            grid-template-columns: repeat(9, minmax(0, 1fr));
+            gap: 6px;
+            width: min(384px, calc(100vw - 24px));
+            margin: 12px auto 0;
+        }
+        .completion-btn {
+            aspect-ratio: 1;
+            min-width: 0;
+            padding: 0;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .completion-btn.completed {
+            text-decoration: line-through;
+            opacity: 0.58;
+        }
         .btn-darkmode {
             margin-left: 10px;
         }
@@ -263,6 +281,12 @@
             .num-btn {
                 font-size: 1rem !important;
             }
+            .number-completion {
+                gap: 4px;
+            }
+            .completion-btn {
+                font-size: 0.85rem;
+            }
             .sudoku-controls button {
                 padding: 6px 10px;
                 font-size: 0.85rem;
@@ -285,6 +309,7 @@
         </div>
         <div id="timer" class="mb-1">Tid: 0:00</div>
         <div id="score" class="mb-2">Poäng: 0 | Fel: 0</div>
+        <div id="number-completion" class="number-completion" aria-label="Markera färdiga siffror"></div>
         <div id="sudoku-board" class="sudoku-board"></div>
         <div class="sudoku-controls mt-3">
             <div class="d-flex flex-column align-items-center">

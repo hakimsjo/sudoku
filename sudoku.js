@@ -60,6 +60,7 @@ let checkResult = null; // To store check results ('right', 'wrong')
 let entryMode = 'value';
 let mistakeCount = 0;
 let mistakeHistory = [];
+let completedNumbers = [];
 const savedGameKey = 'sudoku_saved_game';
 const scoreBaseByDifficulty = {
     easy: 10000,
@@ -132,6 +133,7 @@ function saveGameState() {
         entryMode,
         mistakeCount,
         mistakeHistory,
+        completedNumbers,
         darkMode: document.body.classList.contains('bg-dark')
     };
 
@@ -168,6 +170,9 @@ function restoreSavedGame() {
         entryMode = state.entryMode === 'note' ? 'note' : 'value';
         mistakeCount = Number.isInteger(state.mistakeCount) && state.mistakeCount >= 0 ? state.mistakeCount : 0;
         mistakeHistory = Array.isArray(state.mistakeHistory) ? state.mistakeHistory : [];
+        completedNumbers = Array.isArray(state.completedNumbers)
+            ? state.completedNumbers.filter(num => Number.isInteger(num) && num >= 1 && num <= 9)
+            : [];
         checkResult = null;
 
         document.body.classList.toggle('bg-dark', state.darkMode === true);
@@ -455,6 +460,36 @@ function renderBoard() {
     }
 }
 
+function renderNumberCompletion() {
+    const completionDiv = document.getElementById('number-completion');
+    if (!completionDiv) return;
+
+    completionDiv.innerHTML = '';
+    for (let num = 1; num <= 9; num++) {
+        const button = document.createElement('button');
+        const isCompleted = completedNumbers.includes(num);
+        button.type = 'button';
+        button.className = `btn btn-sm completion-btn ${isCompleted ? 'btn-success completed' : 'btn-outline-secondary'}`;
+        button.dataset.num = num;
+        button.textContent = num;
+        button.setAttribute('aria-pressed', isCompleted ? 'true' : 'false');
+        button.setAttribute('aria-label', `${isCompleted ? 'Avmarkera' : 'Markera'} ${num} som färdig`);
+        button.onclick = () => toggleCompletedNumber(num);
+        completionDiv.appendChild(button);
+    }
+}
+
+function toggleCompletedNumber(num) {
+    if (completedNumbers.includes(num)) {
+        completedNumbers = completedNumbers.filter(completedNum => completedNum !== num);
+    } else {
+        completedNumbers = [...completedNumbers, num].sort((a, b) => a - b);
+    }
+
+    saveGameState();
+    renderNumberCompletion();
+}
+
 function renderNotes(cell, notes) {
     if (!notes.length) return;
 
@@ -540,8 +575,10 @@ function executeClearBoard() {
     checkResult = null;
     mistakeCount = 0;
     mistakeHistory = [];
+    completedNumbers = [];
     saveGameState();
     renderBoard();
+    renderNumberCompletion();
     updateScoreDisplay();
     closeConfirmModal();
 }
@@ -821,6 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const modeInput = document.querySelector(`input[name="entryMode"][value="${entryMode}"]`);
         if (modeInput) modeInput.checked = true;
         renderBoard();
+        renderNumberCompletion();
         startTimer(false);
     } else {
         newGame();
@@ -834,9 +872,11 @@ function newGame() {
     entryMode = 'value';
     mistakeCount = 0;
     mistakeHistory = [];
+    completedNumbers = [];
     const valueMode = document.getElementById('valueMode');
     if (valueMode) valueMode.checked = true;
     renderBoard();
+    renderNumberCompletion();
     startTimer();
     saveGameState();
 }
