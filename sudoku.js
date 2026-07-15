@@ -69,6 +69,21 @@ const scoreBaseByDifficulty = {
 };
 const timePenaltyPerSecond = 10;
 const mistakePenalty = 250;
+const themeColors = {
+    light: '#f8f9fa',
+    dark: '#212529'
+};
+
+function updateBrowserTheme() {
+    const isDark = document.body.classList.contains('bg-dark');
+    const activeTheme = isDark ? 'dark' : 'light';
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+
+    if (themeColorMeta) {
+        themeColorMeta.setAttribute('content', themeColors[activeTheme]);
+    }
+    document.documentElement.style.colorScheme = activeTheme;
+}
 
 function deepCopy(board) {
     return board.map(row => row.slice());
@@ -178,6 +193,7 @@ function restoreSavedGame() {
         document.body.classList.toggle('bg-dark', state.darkMode === true);
         document.body.classList.toggle('bg-light', state.darkMode !== true);
         document.body.classList.toggle('text-light', state.darkMode === true);
+        updateBrowserTheme();
 
         return true;
     } catch (error) {
@@ -755,11 +771,13 @@ function toggleTheme() {
     body.classList.toggle('bg-light');
     body.classList.toggle('bg-dark');
     body.classList.toggle('text-light');
+    updateBrowserTheme();
     saveGameState();
 }
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    updateBrowserTheme();
     document.getElementById('difficulty').onchange = e => {
         difficulty = e.target.value;
         newGame();
