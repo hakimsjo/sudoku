@@ -265,6 +265,28 @@
             background: #b71c1c !important;
             color: #fff !important;
         }
+        body.bg-dark .sudoku-cell.cell-correct {
+            background: #256b2a !important;
+            color: #fff !important;
+        }
+        body.bg-dark .sudoku-cell.cell-incorrect {
+            background: #b4232d !important;
+            color: #fff !important;
+        }
+        .error-icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 16px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            color: #fff;
+            background: linear-gradient(145deg, #ef5350, #b71c1c);
+            box-shadow: 0 12px 24px rgba(183, 28, 28, 0.28);
+            font-size: 2.25rem;
+            font-weight: 800;
+            line-height: 1;
+        }
 
         /* Mobilanpassning */
         @media (max-width: 480px) {
@@ -409,6 +431,23 @@
                             <button type="button" class="btn btn-outline-secondary px-3" id="viewHighscoreFromWinBtn">Visa highscore</button>
                             <button type="button" class="btn btn-primary px-3" id="newGameFromWinBtn">Nytt spel</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Felaktig lösning Modal -->
+        <div id="errorModal" class="modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="errorTitle" aria-describedby="errorMessage">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header border-0 pb-0">
+                        <button type="button" class="btn-close ms-auto" id="closeErrorBtn" aria-label="Stäng"></button>
+                    </div>
+                    <div class="modal-body text-center px-4 pb-4 pt-1">
+                        <div class="error-icon" aria-hidden="true">×</div>
+                        <h4 id="errorTitle" class="modal-title fw-bold mb-2">Inte riktigt än</h4>
+                        <p id="errorMessage" class="text-muted mb-4">Några siffror är fel. De är markerade med rött så att du enkelt kan hitta och rätta dem.</p>
+                        <button type="button" class="btn btn-danger px-4" id="continueErrorBtn">Fortsätt lösa</button>
                     </div>
                 </div>
             </div>
