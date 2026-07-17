@@ -69,6 +69,21 @@ const scoreBaseByDifficulty = {
 };
 const timePenaltyPerSecond = 10;
 const mistakePenalty = 250;
+const themeColors = {
+    light: '#f8f9fa',
+    dark: '#212529'
+};
+
+function updateBrowserTheme() {
+    const isDark = document.body.classList.contains('bg-dark');
+    const activeTheme = isDark ? 'dark' : 'light';
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+
+    if (themeColorMeta) {
+        themeColorMeta.setAttribute('content', themeColors[activeTheme]);
+    }
+    document.documentElement.style.colorScheme = activeTheme;
+}
 
 function deepCopy(board) {
     return board.map(row => row.slice());
@@ -178,6 +193,7 @@ function restoreSavedGame() {
         document.body.classList.toggle('bg-dark', state.darkMode === true);
         document.body.classList.toggle('bg-light', state.darkMode !== true);
         document.body.classList.toggle('text-light', state.darkMode === true);
+        updateBrowserTheme();
 
         return true;
     } catch (error) {
@@ -544,7 +560,9 @@ function fillCell(num) {
             setTimeout(showWinModal, 100);
         } else {
             registerBoardMistakes();
-            setTimeout(() => alert('Fel lösning!'), 100);
+            markBoardResults();
+            renderBoard();
+            setTimeout(showErrorModal, 100);
         }
     }
 }
@@ -604,6 +622,15 @@ function registerBoardMistakes() {
             }
         }
     }
+}
+
+function markBoardResults() {
+    checkResult = Array.from({ length: 9 }, (_, r) =>
+        Array.from({ length: 9 }, (_, c) => {
+            if (initialBoard[r][c] !== 0 || currentBoard[r][c] === 0) return null;
+            return currentBoard[r][c] === solution[r][c] ? 'right' : 'wrong';
+        })
+    );
 }
 
 
@@ -750,16 +777,37 @@ function closeWinModal() {
     document.body.classList.remove('modal-open');
 }
 
+function showErrorModal() {
+    const modal = document.getElementById('errorModal');
+    if (!modal) return;
+
+    modal.classList.add('show');
+    modal.style.display = 'block';
+    document.body.classList.add('modal-open');
+    document.getElementById('continueErrorBtn')?.focus();
+}
+
+function closeErrorModal() {
+    const modal = document.getElementById('errorModal');
+    if (!modal) return;
+
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    document.body.classList.remove('modal-open');
+}
+
 function toggleTheme() {
     const body = document.body;
     body.classList.toggle('bg-light');
     body.classList.toggle('bg-dark');
     body.classList.toggle('text-light');
+    updateBrowserTheme();
     saveGameState();
 }
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    updateBrowserTheme();
     document.getElementById('difficulty').onchange = e => {
         difficulty = e.target.value;
         newGame();
@@ -845,11 +893,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.id === 'winModal') closeWinModal();
     };
 
+    document.getElementById('closeErrorBtn').onclick = closeErrorModal;
+    document.getElementById('continueErrorBtn').onclick = closeErrorModal;
+    document.getElementById('errorModal').onclick = e => {
+        if (e.target.id === 'errorModal') closeErrorModal();
+    };
+
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             closeHighscoreModal();
             closeConfirmModal();
             closeWinModal();
+            closeErrorModal();
         }
     });
     document.getElementById('toggleTheme').onclick = toggleTheme;
